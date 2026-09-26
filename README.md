@@ -4,12 +4,12 @@ A predictive maintenance system for industrial machines, combining three AI mode
 
 ## 🎯 Objective
 
-Detect bearing faults, estimate a motor's Remaining Useful Life (RUL), and detect vibration anomalies in real time, using sensor data simulated via an ESP32.
+Detect bearing faults, estimate a motor's Remaining Useful Life (RUL), and detect vibration anomalies in real time, using sensor data from an ESP32-based IoT setup.
 
 ## 🏗️ Architecture
 
 ```
-Machine/Motor → Sensors (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (FastAPI) → AI Models → Dashboard (Streamlit)
+Machine/Motor → Sensors (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (FastAPI) → AI Models → Frontend (dashboard)
 ```
 
 ![Architecture](docs/overall.png)
@@ -22,18 +22,21 @@ Machine/Motor → Sensors (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (FastAP
 | 2 — RUL prediction | NASA C-MAPSS (FD001) | Remaining Useful Life | *[name of the selected DL model]* |
 | 3 — Anomaly detection | NASA IMS | Unsupervised anomaly detection (vibration signals) | Isolation Forest (trained on healthy data only) |
 
+
 ## 📁 Project structure
 
 ```
-├── notebooks/
+├── final-notebooks/         # Final training/analysis notebooks for the 3 components
 │   ├── cwru/
 │   ├── cmapss/
 │   │   ├── ML/
 │   │   ├── DL/
 │   │   └── model_comparison.ipynb
 │   └── ims/
-├── models/              
-├── api/                 # FastAPI backend
+├── models/
+│   └── production/          # Final trained models used by the API
+├── src/                     # Core source code
+├── api/                     # FastAPI backend
 │   ├── app.py
 │   ├── model_loader.py
 │   ├── inference_cwru.py
@@ -41,29 +44,34 @@ Machine/Motor → Sensors (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (FastAP
 │   ├── inference_ims.py
 │   ├── inference_sensor.py
 │   └── schemas.py
-├── tests/         
+├── agents/                  # Multi-agent orchestration 
+├── frontend/                # Dashboard application
+├── IoT equipments/          # ESP32 firmware, MPU6050 wiring, MQTT publishing
+├── integration_material/    # Real hardware setup (components, wiring docs, photos)
+├── vibration_test/          # Real vibration test setup and recorded results
+├── tests/                   # Automated tests (pytest)
 │   ├── conftest.py
 │   ├── test_cwru.py
 │   ├── test_cmapss.py
 │   ├── test_ims.py
 │   ├── test_sensor.py
 │   └── test_health.py
-├── tools/         
+├── tools/                   # Utility scripts (payload generation, model inspection)
 │   ├── generate_test_payloads.py
 │   ├── generate_real_test_payloads.py
 │   ├── inspect_models.py
 │   ├── test_api.py
 │   └── sample_payloads/
-├── iot/              
-├── dashboard/         
-└── docs/
+├── docs/
+├── pytest.ini
+└── requirements.txt
 ```
 
 ## ⚙️ Installation
 
 ```bash
-git clone https://github.com/<your-user>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/bensaid25/bearing-fault-detection-rha.git
+cd bearing-fault-detection-rha
 python -m venv venv
 source venv/bin/activate   # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
@@ -77,14 +85,15 @@ cd api
 uvicorn app:app --reload
 ```
 
-**2. Run the sensor stream simulator (MQTT)**
+**2. Run the IoT sensor stream**
 ```bash
-python iot/mqtt_simulator/simulate.py
+# See IoT equipments/README.md for ESP32 flashing and MQTT setup
 ```
 
-**3. Run the dashboard**
+**3. Run the frontend**
 ```bash
-streamlit run dashboard/streamlit_app.py
+cd frontend
+streamlit run app.py   # adjust filename to match the actual entry point
 ```
 
 ## ✅ Tests
@@ -98,17 +107,23 @@ Utility scripts are available in `tools/` to generate test payloads (`generate_t
 
 ## 📦 Models
 
-Trained models are too large to be committed directly to GitHub. They are available here: *[GitHub Release / Hugging Face / Drive link]*.
+Final trained models are stored in `models/production/`. If a model exceeds GitHub's file size limit, it is hosted externally: *[GitHub Release / Hugging Face / Drive link]*.
 
-Place them in `models/` after downloading, or run:
+Verify models load correctly with:
 ```bash
 python tools/inspect_models.py
 ```
-to verify the models load correctly once placed.
+
+## 🔧 Hardware setup
+
+- `IoT equipments/` — ESP32 + MPU6050 firmware and wiring
+- `integration_material/` — full real-world hardware integration (components used, wiring diagrams, setup photos)
+- `vibration_test/` — real vibration test bench setup and recorded results
 
 ## 📊 Demo
 
-![Architecture](docs/dashboard.png)
+![Dashboard](docs/dashboard.png)
+
 
 ## 🏢 Context
 
@@ -116,4 +131,4 @@ Internship project carried out at **ELYOS DIGITAL**, under the supervision of Sa
 
 ## 📜 License
 
-*[To be defined — e.g. MIT]*
+This project is licensed under the MIT License.
