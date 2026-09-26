@@ -1,28 +1,28 @@
 # Intelligent Bearing Fault Detection and Remaining Health Assessment
 
-Système de maintenance prédictive pour machines industrielles, combinant trois modèles IA (classification de défauts, prédiction de durée de vie utile restante, détection d'anomalies), un pipeline IoT temps réel et un dashboard de supervision.
+A predictive maintenance system for industrial machines, combining three AI models (fault classification, remaining useful life prediction, anomaly detection), a real-time IoT pipeline, and a monitoring dashboard.
 
-## 🎯 Objectif
+## 🎯 Objective
 
-Détecter les défauts de roulements, estimer la durée de vie utile restante (RUL) d'un moteur, et détecter les anomalies de vibration en temps réel, à partir de données capteurs simulées via ESP32.
+Detect bearing faults, estimate a motor's Remaining Useful Life (RUL), and detect vibration anomalies in real time, using sensor data simulated via an ESP32.
 
 ## 🏗️ Architecture
 
 ```
-Machine/Moteur → Capteurs (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (FastAPI) → Modèles IA → Dashboard (Streamlit)
+Machine/Motor → Sensors (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (FastAPI) → AI Models → Dashboard (Streamlit)
 ```
 
 ![Architecture](docs/overall.png)
 
-## 🧠 Composants IA
+## 🧠 AI Components
 
-| Composant | Dataset | Tâche | Modèle final |
+| Component | Dataset | Task | Final model |
 |---|---|---|---|
-| 1 — Classification de défauts | CWRU (Case Western Reserve University) | Normal / Ball fault / Inner-race / Outer-race | *[nom du modèle ML retenu]* |
-| 2 — Prédiction RUL | NASA C-MAPSS (FD001) | Remaining Useful Life | *[nom du modèle DL retenu]* |
-| 3 — Détection d'anomalies | NASA IMS | Anomalies non supervisées (signaux de vibration) | Isolation Forest (entraîné sur données saines) |
+| 1 — Fault classification | CWRU (Case Western Reserve University) | Normal / Ball fault / Inner-race / Outer-race | *[name of the selected ML model]* |
+| 2 — RUL prediction | NASA C-MAPSS (FD001) | Remaining Useful Life | *[name of the selected DL model]* |
+| 3 — Anomaly detection | NASA IMS | Unsupervised anomaly detection (vibration signals) | Isolation Forest (trained on healthy data only) |
 
-## 📁 Structure du projet
+## 📁 Project structure
 
 ```
 ├── notebooks/
@@ -32,8 +32,8 @@ Machine/Moteur → Capteurs (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (Fast
 │   │   ├── DL/
 │   │   └── model_comparison.ipynb
 │   └── ims/
-├── models/              # Modèles entraînés (.joblib, .h5...) — voir section Modèles
-├── api/                 # API FastAPI
+├── models/              
+├── api/                 # FastAPI backend
 │   ├── app.py
 │   ├── model_loader.py
 │   ├── inference_cwru.py
@@ -41,83 +41,79 @@ Machine/Moteur → Capteurs (MPU6050) → ESP32 → Wi-Fi/MQTT → Backend (Fast
 │   ├── inference_ims.py
 │   ├── inference_sensor.py
 │   └── schemas.py
-├── tests/               # Tests automatisés (pytest)
+├── tests/         
 │   ├── conftest.py
 │   ├── test_cwru.py
 │   ├── test_cmapss.py
 │   ├── test_ims.py
 │   ├── test_sensor.py
 │   └── test_health.py
-├── tools/               # Scripts utilitaires (génération de payloads, inspection des modèles)
+├── tools/         
 │   ├── generate_test_payloads.py
 │   ├── generate_real_test_payloads.py
 │   ├── inspect_models.py
 │   ├── test_api.py
 │   └── sample_payloads/
-├── iot/                 # Firmware ESP32 + simulateur MQTT
-├── dashboard/           # Application Streamlit
+├── iot/              
+├── dashboard/         
 └── docs/
 ```
 
 ## ⚙️ Installation
 
 ```bash
-git clone https://github.com/<ton-user>/<ton-repo>.git
-cd <ton-repo>
+git clone https://github.com/<your-user>/<your-repo>.git
+cd <your-repo>
 python -m venv venv
-source venv/bin/activate   # ou venv\Scripts\activate sous Windows
+source venv/bin/activate   # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
-## 🚀 Utilisation
+## 🚀 Usage
 
-**1. Lancer l'API (FastAPI)**
+**1. Run the API (FastAPI)**
 ```bash
 cd api
 uvicorn app:app --reload
 ```
 
-**2. Lancer le simulateur de flux capteurs (MQTT)**
+**2. Run the sensor stream simulator (MQTT)**
 ```bash
 python iot/mqtt_simulator/simulate.py
 ```
 
-**3. Lancer le dashboard**
+**3. Run the dashboard**
 ```bash
 streamlit run dashboard/streamlit_app.py
 ```
 
 ## ✅ Tests
 
-25 tests automatisés couvrant les trois endpoints de prédiction :
+25 automated tests covering the three prediction endpoints:
 ```bash
 pytest tests/
 ```
 
-Scripts utilitaires disponibles dans `tools/` pour générer des payloads de test (`generate_test_payloads.py`, `generate_real_test_payloads.py`) et inspecter les modèles chargés (`inspect_models.py`).
+Utility scripts are available in `tools/` to generate test payloads (`generate_test_payloads.py`, `generate_real_test_payloads.py`) and inspect loaded models (`inspect_models.py`).
 
-## 📦 Modèles
+## 📦 Models
 
-Les modèles entraînés sont trop volumineux pour être commités directement sur GitHub. Ils sont disponibles ici : *[lien Release GitHub / Hugging Face / Drive]*.
+Trained models are too large to be committed directly to GitHub. They are available here: *[GitHub Release / Hugging Face / Drive link]*.
 
-Place-les dans `models/` après téléchargement, ou utilise :
+Place them in `models/` after downloading, or run:
 ```bash
 python tools/inspect_models.py
 ```
-pour vérifier que les modèles sont bien chargés une fois placés.
+to verify the models load correctly once placed.
 
-## 📊 Démonstration
+## 📊 Demo
 
-*[Ajouter un GIF ou des screenshots du dashboard une fois finalisé]*
+*[Add a GIF or screenshots of the dashboard once finalized]*
 
-## 📄 Rapport
+## 🏢 Context
 
-Rapport complet rédigé en LaTeX (Overleaf) : *[lien ou export PDF dans docs/report/]*
+Internship project carried out at **ELYOS DIGITAL**, under the supervision of Salma KALLELA — ENSI.
 
-## 🏢 Contexte
+## 📜 License
 
-Projet de stage réalisé chez **ELYOS DIGITAL**, sous la supervision de Salma KALLELA — ENSI.
-
-## 📜 Licence
-
-*[À définir — MIT, par exemple]*
+*[To be defined — e.g. MIT]*
