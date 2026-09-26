@@ -108,7 +108,7 @@ to verify the models load correctly once placed.
 
 ## 📊 Demo
 
-*[Add a GIF or screenshots of the dashboard once finalized]*
+![Architecture](docs/dashboard.png)
 
 ## 🏢 Context
 
