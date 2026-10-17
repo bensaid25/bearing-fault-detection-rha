@@ -24,14 +24,13 @@ installed version.
 
 import logging
 from typing import Callable, Dict, List
-
+import os
 import ollama
 
 logger = logging.getLogger("agents.llm_client")
 
 # Swap this if your hardware can't comfortably run an 8B model.
-DEFAULT_MODEL = "llama3.1:8b"
-
+DEFAULT_MODEL = os.getenv("AGENT_LLM_MODEL", "llama3.1:8b")
 
 def chat_with_tools(
     model: str,
@@ -40,6 +39,7 @@ def chat_with_tools(
     tools: List[dict],
     tool_functions: Dict[str, Callable],
     max_tool_rounds: int = 4,
+    terminal_tools: frozenset = frozenset(),
 ) -> str:
     """Run a tool-calling conversation until the model stops calling tools.
 
@@ -71,6 +71,7 @@ def chat_with_tools(
             fn_args = call["function"].get("arguments", {}) or {}
             logger.info("Round %d: model called tool %s(%s)", round_num, fn_name, fn_args)
 
+
             if fn_name not in tool_functions:
                 result = {"error": f"Unknown tool: {fn_name}"}
             else:
@@ -79,6 +80,10 @@ def chat_with_tools(
                 except Exception as exc:
                     logger.exception("Tool %s raised an error", fn_name)
                     result = {"error": str(exc)}
+                else:
+                    if fn_name in terminal_tools:
+                        return ""
+
 
             messages.append({"role": "tool", "content": str(result)})
 

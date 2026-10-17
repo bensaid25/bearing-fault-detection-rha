@@ -1,5 +1,10 @@
 import os
 import sys
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
+
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
@@ -19,7 +24,16 @@ models = load_all_models()
 graph = build_graph(models)
 out = graph.invoke({"payload": cwru_payload})
 
+print("LLM answered:", out.get("llm_pipeline"))
+
 print("Pipeline:", out["pipeline"])
 print("Confidence:", out.get("confidence"))
 print("Used fallback:", out["used_fallback"])
 print("Summary:", out["summary"])
+
+
+from api.inference_cwru import predict_cwru
+from api.schemas import CWRURequest
+
+print("Raw model output:", predict_cwru(CWRURequest(**cwru_payload), models["cwru"]))
+print("Error:", out.get("error"))

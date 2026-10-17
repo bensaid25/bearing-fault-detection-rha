@@ -75,6 +75,9 @@ def run_predictor_agent(
 
     payload: the same raw request dict the classifier agent looked at.
     models: the dict returned by api/model_loader.py's load_all_models().
+
+    Raises RuntimeError if the matching prediction tool did not produce a
+    result, so a failed prediction is never summarized by the LLM.
     """
 
     def run_cwru_prediction() -> dict:
@@ -93,13 +96,27 @@ def run_predictor_agent(
         result = predict_cmapss(request, models["cmapss"])
         return result.model_dump()
 
+    outcome: dict = {}
+
+    def record(name, fn):
+        def wrapper() -> dict:
+            try:
+                result = fn()
+            except Exception as exc:
+                outcome["error"] = f"{name}: {exc}"
+                raise
+            outcome["tool"] = name
+            outcome["result"] = result
+            return result
+        return wrapper
+
     tool_functions = {
-        "run_cwru_prediction": run_cwru_prediction,
-        "run_ims_prediction": run_ims_prediction,
-        "run_cmapss_prediction": run_cmapss_prediction,
+        "run_cwru_prediction": record("run_cwru_prediction", run_cwru_prediction),
+        "run_ims_prediction": record("run_ims_prediction", run_ims_prediction),
+        "run_cmapss_prediction": record("run_cmapss_prediction", run_cmapss_prediction),
     }
 
-    return chat_with_tools(
+    summary = chat_with_tools(
         model=model,
         system_prompt=SYSTEM_PROMPT,
         user_message=(
@@ -109,3 +126,31 @@ def run_predictor_agent(
         tools=TOOLS,
         tool_functions=tool_functions,
     )
+
+    if outcome.get("tool") != f"run_{pipeline}_prediction":
+        raise RuntimeError(
+            f"No valid '{pipeline}' prediction was produced "
+            f"({outcome.get('error', 'the matching tool was not called')})"
+        )
+    return summary
+
+
+def run_prediction(pipeline: str, payload: dict, models: dict) -> dict:
+    """Deterministic prediction: no LLM involved."""
+    if pipeline == "cwru":
+        return predict_cwru(CWRURequest(**payload), models["cwru"]).model_dump()
+    if pipeline == "ims":
+        request = IMSRequest(**payload)
+        return predict_ims(request, models["ims"][request.run]).model_dump()
+    if pipeline == "cmapss":
+        return predict_cmapss(CMAPSSRequest(**payload), models["cmapss"]).model_dump()
+    raise ValueError(f"Unknown pipeline: {pipeline}")
+
+
+def format_summary(pipeline: str, result: dict) -> str:
+    """Summary built from the structured result, never from LLM text."""
+    if pipeline == "cwru":
+        ranked = sorted(result["probabilities"].items(), key=lambda kv: -kv[1])
+        detail = ", ".join(f"{name} {p:.0%}" for name, p in ranked)
+        return f"CWRU bearing diagnosis: {result['predicted_class']} ({detail})."
+    return f"{pipeline} result: {result}"

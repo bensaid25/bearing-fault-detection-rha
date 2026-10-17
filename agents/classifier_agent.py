@@ -41,9 +41,9 @@ these three prediction pipelines the request belongs to:
   key holding a list of 30 dicts, each with 225 named sensor feature
   keys (e.g. "sensor_2", "sensor_2_roll5_mean").
 
-First call get_payload_summary to see the structure of the current
-request. Then call submit_classification exactly once with your decision.
-Always call submit_classification -- never just answer in plain text."""
+The structural summary is given in the user message. Call
+submit_classification exactly once with your decision. Always call
+submit_classification -- never just answer in plain text."""
 
 
 class ClassificationResult(BaseModel):
@@ -105,29 +105,29 @@ def classify_pipeline(payload: dict, model: str = DEFAULT_MODEL) -> Classificati
     """Run the classifier agent on one incoming request payload."""
     captured_result: dict = {}
 
-    def get_payload_summary() -> dict:
-        return _summarize_payload(payload)
-
-    def submit_classification(pipeline: str, confidence: float, reasoning: str) -> dict:
+    def submit_classification(
+        pipeline: str, confidence: float = 0.0, reasoning: str = ""
+    ) -> dict:
         captured_result["pipeline"] = pipeline
         captured_result["confidence"] = confidence
         captured_result["reasoning"] = reasoning
         return {"status": "received"}
 
-    tool_functions = {
-        "get_payload_summary": get_payload_summary,
-        "submit_classification": submit_classification,
-    }
-
     chat_with_tools(
         model=model,
         system_prompt=SYSTEM_PROMPT,
-        user_message="Classify this request.",
-        tools=TOOLS,
-        tool_functions=tool_functions,
+        user_message=(
+            "Classify this request. Structural summary of the payload:\n"
+            f"{_summarize_payload(payload)}\n"
+            "Call submit_classification exactly once."
+        ),
+        tools=[t for t in TOOLS if t["function"]["name"] == "submit_classification"],
+        tool_functions={"submit_classification": submit_classification},
+        terminal_tools=frozenset({"submit_classification"}),
     )
 
     if "pipeline" not in captured_result:
         raise RuntimeError("Classifier agent did not call submit_classification.")
 
     return ClassificationResult(**captured_result)
+    
