@@ -1,42 +1,68 @@
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-.pytest_cache/
-.mypy_cache/
-
-# Virtual environments
+*.pyo
+.venv/
 venv/
 env/
-.venv/
 
-# Environment variables / secrets
-.env
-*.env
-IoT equipments/**/wifi_config.h
-
+# =========================
 # Jupyter
+# =========================
 .ipynb_checkpoints/
 
-# Trained models (too large for git; track via Git LFS or external hosting)
-models/production/*.joblib
-models/production/*.h5
-models/production/*.pt
-models/production/*.pkl
+# =========================
+# Testing
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Test / API results
-api/api_tests_results/
-tools/sample_payloads/*.tmp
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
+# =========================
+# IDE / VS Code
+# =========================
 .vscode/
 .idea/
 
-# Logs
+# =========================
+# Secrets
+# =========================
+.env
+*.env
+*.key
+*.pem
+
+# =========================
+# Large ML model artifacts
+# =========================
+*.keras
+*.joblib
+
+# Production models
+models/production/
+
+# =========================
+# Large datasets
+# =========================
+data/raw/
+data/interim/
+data/processed/
+
+# =========================
+# Generated results
+# =========================
+results/
+
+# =========================
+# Temporary files
+# =========================
 *.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+.venv/
+__pycache__/
+*.pyc
