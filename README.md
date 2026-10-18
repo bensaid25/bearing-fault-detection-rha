@@ -193,9 +193,6 @@ python tools/inspect_models.py
 
 ![Dashboard](docs/dashboard.png)
 
-## 🏢 Context
-
-Internship project carried out at **ELYOS DIGITAL**, under the supervision of Salma KALLELA — ENSI.
 
 ## 📜 License
 
