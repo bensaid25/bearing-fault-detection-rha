@@ -30,7 +30,7 @@ import ollama
 logger = logging.getLogger("agents.llm_client")
 
 # Swap this if your hardware can't comfortably run an 8B model.
-DEFAULT_MODEL = os.getenv("AGENT_LLM_MODEL", "llama3.1:8b")
+DEFAULT_MODEL = os.getenv("AGENT_LLM_MODEL", "llama3.2:3b")
 
 def chat_with_tools(
     model: str,

@@ -18,6 +18,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from pydantic import BaseModel, ValidationError
+
 from .llm_client import DEFAULT_MODEL, chat_with_tools
 
 logger = logging.getLogger("agents.classifier_agent")
@@ -101,33 +103,55 @@ def _summarize_payload(payload: dict) -> dict:
     return summary
 
 
-def classify_pipeline(payload: dict, model: str = DEFAULT_MODEL) -> ClassificationResult:
-    """Run the classifier agent on one incoming request payload."""
-    captured_result: dict = {}
+def classify_pipeline(
+    payload: dict, model: str = DEFAULT_MODEL, attempts: int = 3
+) -> ClassificationResult:
+    """Run the classifier agent on one incoming request payload.
 
-    def submit_classification(
-        pipeline: str, confidence: float = 0.0, reasoning: str = ""
-    ) -> dict:
-        captured_result["pipeline"] = pipeline
-        captured_result["confidence"] = confidence
-        captured_result["reasoning"] = reasoning
-        return {"status": "received"}
+    Small models sometimes reply in plain text instead of calling the tool,
+    or send malformed arguments, so the call is retried up to `attempts` times.
+    """
+    last_reply = ""
+    for attempt in range(1, attempts + 1):
+        captured_result: dict = {}
 
-    chat_with_tools(
-        model=model,
-        system_prompt=SYSTEM_PROMPT,
-        user_message=(
-            "Classify this request. Structural summary of the payload:\n"
-            f"{_summarize_payload(payload)}\n"
-            "Call submit_classification exactly once."
-        ),
-        tools=[t for t in TOOLS if t["function"]["name"] == "submit_classification"],
-        tool_functions={"submit_classification": submit_classification},
-        terminal_tools=frozenset({"submit_classification"}),
+        def submit_classification(
+            pipeline: str = "", confidence: float = 0.0, reasoning: str = ""
+        ) -> dict:
+            captured_result["pipeline"] = str(pipeline).strip().lower()
+            try:
+                captured_result["confidence"] = float(confidence)
+            except (TypeError, ValueError):
+                captured_result["confidence"] = 0.0
+            captured_result["reasoning"] = "" if reasoning is None else str(reasoning)
+            return {"status": "received"}
+
+        last_reply = chat_with_tools(
+            model=model,
+            system_prompt=SYSTEM_PROMPT,
+            user_message=(
+                "Classify this request. Structural summary of the payload:\n"
+                f"{_summarize_payload(payload)}\n"
+                "Call submit_classification exactly once."
+            ),
+            tools=[t for t in TOOLS if t["function"]["name"] == "submit_classification"],
+            tool_functions={"submit_classification": submit_classification},
+            terminal_tools=frozenset({"submit_classification"}),
+        )
+
+        if "pipeline" in captured_result:
+            try:
+                return ClassificationResult(**captured_result)
+            except ValidationError:
+                logger.warning(
+                    "Attempt %d/%d: invalid answer %s", attempt, attempts, captured_result
+                )
+                continue
+
+        logger.warning(
+            "Attempt %d/%d: no tool call; reply was %r", attempt, attempts, last_reply[:80]
+        )
+
+    raise RuntimeError(
+        f"No valid classification after {attempts} attempts; last reply was {last_reply[:60]!r}"
     )
-
-    if "pipeline" not in captured_result:
-        raise RuntimeError("Classifier agent did not call submit_classification.")
-
-    return ClassificationResult(**captured_result)
-    
